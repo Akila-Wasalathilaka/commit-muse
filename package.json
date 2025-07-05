@@ -1,0 +1,169 @@
+{
+  "name": "akyyra-commit-muse",
+  "displayName": "Akyyra Commit Muse",
+  "description": "Professional Git control center with AI-powered commit messages",
+  "version": "1.0.0",
+  "publisher": "akyyra",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/akyyra/commit-muse.git"
+  },
+  "bugs": {
+    "url": "https://github.com/akyyra/commit-muse/issues"
+  },
+  "homepage": "https://github.com/akyyra/commit-muse#readme",
+  "license": "MIT",
+  "engines": {
+    "vscode": "^1.80.0"
+  },
+  "categories": [
+    "SCM Providers",
+    "Other"
+  ],
+  "keywords": [
+    "git",
+    "commit",
+    "ai",
+    "github",
+    "version control",
+    "artificial intelligence",
+    "commit message",
+    "productivity",
+    "developer tools"
+  ],
+  "activationEvents": [
+    "workspaceContains:.git"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "akyyra",
+          "title": "Akyyra",
+          "icon": "$(git-branch)"
+        }
+      ]
+    },
+    "views": {
+      "akyyra": [
+        {
+          "id": "akyyra-dashboard",
+          "name": "Git Dashboard",
+          "type": "webview",
+          "when": "workspaceFolderCount > 0"
+        }
+      ]
+    },
+    "commands": [
+      {
+        "command": "akyyra.refresh",
+        "title": "Refresh",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "akyyra.generateCommitMessage",
+        "title": "Generate AI Commit Message",
+        "icon": "$(sparkle)"
+      },
+      {
+        "command": "akyyra.openSettings",
+        "title": "Settings",
+        "icon": "$(settings-gear)"
+      },
+      {
+        "command": "akyyra.showLogs",
+        "title": "Show Logs",
+        "icon": "$(output)"
+      }
+    ],
+    "menus": {
+      "view/title": [
+        {
+          "command": "akyyra.refresh",
+          "when": "view == akyyra-dashboard",
+          "group": "navigation"
+        },
+        {
+          "command": "akyyra.generateCommitMessage",
+          "when": "view == akyyra-dashboard",
+          "group": "navigation"
+        },
+        {
+          "command": "akyyra.openSettings",
+          "when": "view == akyyra-dashboard",
+          "group": "navigation"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "Akyyra Commit Muse",
+      "properties": {
+        "akyyra.aiProvider": {
+          "type": "string",
+          "default": "openai",
+          "enum": [
+            "openai",
+            "mistral",
+            "claude"
+          ],
+          "description": "AI provider for commit message generation"
+        },
+        "akyyra.apiKey": {
+          "type": "string",
+          "default": "",
+          "description": "API key for AI provider"
+        },
+        "akyyra.commitStyle": {
+          "type": "string",
+          "default": "conventional",
+          "enum": [
+            "conventional",
+            "tldr",
+            "corporate",
+            "genz",
+            "custom"
+          ],
+          "description": "Default commit message style"
+        },
+        "akyyra.autoStage": {
+          "type": "boolean",
+          "default": false,
+          "description": "Automatically stage all changes before commit"
+        },
+        "akyyra.showGraph": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show commit graph in dashboard"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "pretest": "npm run compile && npm run lint",
+    "lint": "eslint src --ext ts",
+    "test": "node ./out/test/runTest.js",
+    "package": "vsce package",
+    "install-package": "code --install-extension akyyra-commit-muse-1.0.0.vsix"
+  },
+  "devDependencies": {
+    "@types/glob": "^8.1.0",
+    "@types/mocha": "^10.0.10",
+    "@types/node": "16.x",
+    "@types/vscode": "^1.80.0",
+    "@typescript-eslint/eslint-plugin": "^5.59.1",
+    "@typescript-eslint/parser": "^5.59.1",
+    "@vscode/test-electron": "^2.5.2",
+    "eslint": "^8.39.0",
+    "mocha": "^11.7.1",
+    "typescript": "^5.0.4",
+    "vsce": "^2.15.0"
+  },
+  "dependencies": {
+    "axios": "^1.4.0",
+    "simple-git": "^3.19.1"
+  }
+}
