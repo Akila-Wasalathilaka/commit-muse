@@ -32,7 +32,9 @@
     "developer tools"
   ],
   "activationEvents": [
-    "workspaceContains:.git"
+    "onStartupFinished",
+    "workspaceContains:.git",
+    "onView:akyyra-dashboard"
   ],
   "main": "./out/extension.js",
   "contributes": {
@@ -40,7 +42,7 @@
       "activitybar": [
         {
           "id": "akyyra",
-          "title": "Akyyra",
+          "title": "Commit Muse",
           "icon": "$(git-branch)"
         }
       ]
@@ -51,7 +53,9 @@
           "id": "akyyra-dashboard",
           "name": "Git Dashboard",
           "type": "webview",
-          "when": "workspaceFolderCount > 0"
+          "icon": "$(git-branch)",
+          "visibility": "visible",
+          "when": "workspaceHasGit"
         }
       ]
     },
@@ -75,6 +79,11 @@
         "command": "akyyra.showLogs",
         "title": "Show Logs",
         "icon": "$(output)"
+      },
+      {
+        "command": "akyyra.test",
+        "title": "Test Extension",
+        "icon": "$(check)"
       }
     ],
     "menus": {
