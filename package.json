@@ -1,0 +1,179 @@
+{
+  "name": "akyyra-commit-muse",
+  "displayName": "Akyyra Commit Muse",
+  "description": "AI-powered Git commit assistant that makes commit messages actually enjoyable with voice input, multiple styles, and PR summarization",
+  "version": "0.0.1",
+  "publisher": "akyyra",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/akyyra/commit-muse"
+  },
+  "homepage": "https://github.com/akyyra/commit-muse#readme",
+  "bugs": {
+    "url": "https://github.com/akyyra/commit-muse/issues"
+  },
+  "galleryBanner": {
+    "color": "#667eea",
+    "theme": "dark"
+  },
+  "engines": {
+    "vscode": "^1.101.0"
+  },
+  "categories": [
+    "Other",
+    "SCM Providers"
+  ],
+  "keywords": [
+    "git",
+    "commit",
+    "ai",
+    "voice",
+    "pr",
+    "conventional-commits"
+  ],
+  "activationEvents": [
+    "workspaceContains:.git"
+  ],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "akyyra-commit-muse.openPanel",
+        "title": "Open Commit Muse",
+        "category": "Akyyra",
+        "icon": "$(git-commit)"
+      },
+      {
+        "command": "akyyra-commit-muse.generateCommit",
+        "title": "Generate AI Commit Message",
+        "category": "Akyyra",
+        "icon": "$(sparkle)"
+      },
+      {
+        "command": "akyyra-commit-muse.voiceCommit",
+        "title": "Voice Commit",
+        "category": "Akyyra",
+        "icon": "$(mic)"
+      },
+      {
+        "command": "akyyra-commit-muse.summarizePR",
+        "title": "Summarize PR",
+        "category": "Akyyra",
+        "icon": "$(git-pull-request)"
+      },
+      {
+        "command": "akyyra-commit-muse.settings",
+        "title": "Settings",
+        "category": "Akyyra",
+        "icon": "$(settings-gear)"
+      }
+    ],
+    "menus": {
+      "scm/title": [
+        {
+          "command": "akyyra-commit-muse.openPanel",
+          "group": "navigation",
+          "when": "scmProvider == git"
+        }
+      ],
+      "commandPalette": [
+        {
+          "command": "akyyra-commit-muse.openPanel"
+        },
+        {
+          "command": "akyyra-commit-muse.generateCommit"
+        },
+        {
+          "command": "akyyra-commit-muse.voiceCommit"
+        },
+        {
+          "command": "akyyra-commit-muse.summarizePR"
+        },
+        {
+          "command": "akyyra-commit-muse.settings"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "Akyyra Commit Muse",
+      "properties": {
+        "akyyra-commit-muse.aiProvider": {
+          "type": "string",
+          "default": "openai",
+          "enum": [
+            "openai",
+            "anthropic",
+            "mistral"
+          ],
+          "description": "AI provider for generating commit messages"
+        },
+        "akyyra-commit-muse.apiKey": {
+          "type": "string",
+          "default": "",
+          "description": "API key for the selected AI provider"
+        },
+        "akyyra-commit-muse.defaultVibe": {
+          "type": "string",
+          "default": "conventional",
+          "enum": [
+            "conventional",
+            "emoji",
+            "corporate",
+            "casual",
+            "genz",
+            "custom"
+          ],
+          "description": "Default commit message style"
+        },
+        "akyyra-commit-muse.customPrompt": {
+          "type": "string",
+          "default": "",
+          "description": "Custom prompt for AI commit message generation"
+        },
+        "akyyra-commit-muse.autoSuggest": {
+          "type": "boolean",
+          "default": false,
+          "description": "Automatically suggest commit messages on file save"
+        },
+        "akyyra-commit-muse.voiceLanguage": {
+          "type": "string",
+          "default": "en-US",
+          "description": "Language for voice recognition"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run package",
+    "compile": "npm run check-types && npm run lint && node esbuild.js",
+    "watch": "npm-run-all -p watch:*",
+    "watch:esbuild": "node esbuild.js --watch",
+    "watch:tsc": "tsc --noEmit --watch --project tsconfig.json",
+    "package": "npm run check-types && npm run lint && node esbuild.js --production",
+    "compile-tests": "tsc -p . --outDir out",
+    "watch-tests": "tsc -p . -w --outDir out",
+    "pretest": "npm run compile-tests && npm run compile && npm run lint",
+    "check-types": "tsc --noEmit",
+    "lint": "eslint src",
+    "test": "vscode-test"
+  },
+  "devDependencies": {
+    "@types/axios": "^0.9.36",
+    "@types/mocha": "^10.0.10",
+    "@types/node": "20.x",
+    "@types/vscode": "^1.101.0",
+    "@typescript-eslint/eslint-plugin": "^8.31.1",
+    "@typescript-eslint/parser": "^8.31.1",
+    "@vscode/test-cli": "^0.0.11",
+    "@vscode/test-electron": "^2.5.2",
+    "esbuild": "^0.25.3",
+    "eslint": "^9.25.1",
+    "npm-run-all": "^4.1.5",
+    "typescript": "^5.8.3"
+  },
+  "dependencies": {
+    "axios": "^1.10.0",
+    "simple-git": "^3.28.0"
+  }
+}
