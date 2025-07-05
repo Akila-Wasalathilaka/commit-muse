@@ -117,6 +117,17 @@ export class GitService {
         }
     }
 
+    async stageFile(workspacePath: string, filePath: string): Promise<boolean> {
+        try {
+            const git = simpleGit(workspacePath);
+            await git.add([filePath]);
+            return true;
+        } catch (error) {
+            console.error('Error staging file:', error);
+            return false;
+        }
+    }
+
     async getUnstagedFiles(workspacePath?: string): Promise<string[]> {
         try {
             const git = workspacePath ? simpleGit(workspacePath) : this.git;

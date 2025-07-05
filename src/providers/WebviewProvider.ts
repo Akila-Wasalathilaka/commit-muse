@@ -115,6 +115,20 @@ export class WebviewProvider {
                     command: 'commitGenerated', 
                     message: message 
                 });
+
+                // Also set the message in SCM input box
+                try {
+                    const gitExtension = vscode.extensions.getExtension('vscode.git')?.exports;
+                    if (gitExtension) {
+                        const api = gitExtension.getAPI(1);
+                        const repo = api.repositories[0];
+                        if (repo) {
+                            repo.inputBox.value = message;
+                        }
+                    }
+                } catch (error) {
+                    console.warn('Could not set SCM input box:', error);
+                }
             } else {
                 this.sendMessage({ 
                     command: 'error', 

@@ -47,15 +47,174 @@ export class AIService {
                 return null;
             }
 
+            // Test mode - return a sample message if API key is 'test'
+            if (apiKey.toLowerCase() === 'test') {
+                const testMessages = {
+                    conventional: 'feat: add new feature implementation',
+                    emoji: '✨ Add new feature implementation',
+                    corporate: 'Implement new feature functionality',
+                    casual: 'Added a cool new feature',
+                    genz: 'no cap just added this fire feature 🔥'
+                };
+                return testMessages[vibe as keyof typeof testMessages] || testMessages.conventional;
+            }
+
             const selectedVibe = vibe === 'custom' 
                 ? { prompt: config.get<string>('customPrompt', ''), name: 'Custom', example: '' }
                 : this.vibes.get(vibe) || this.vibes.get('conventional')!;
 
-            return await this.callAI(provider, apiKey, diff, selectedVibe);
+            // Try the selected provider first, with fallback to OpenAI
+            try {
+                return await this.callAI(provider, apiKey, diff, selectedVibe);
+            } catch (error) {
+                console.warn(`Primary provider ${provider} failed, trying fallback...`);
+                
+                // If Mistral fails and we have OpenAI key, try OpenAI
+                if (provider === 'mistral') {
+                    const openaiKey = config.get<string>('openaiApiKey', '');
+                    if (openaiKey) {
+                        return await this.callAI('openai', openaiKey, diff, selectedVibe);
+                    }
+                }
+                
+                throw error; // Re-throw if no fallback available
+            }
         } catch (error) {
             console.error('Error generating commit message:', error);
             vscode.window.showErrorMessage(`Failed to generate commit message: ${error}`);
             return null;
+        }
+    }
+
+    private validateApiKey(provider: string, apiKey: string): boolean {
+        switch (provider) {
+            case 'openai':
+                return apiKey.startsWith('sk-') && apiKey.length > 20;
+            case 'anthropic':
+                return apiKey.startsWith('sk-ant-') && apiKey.length > 20;
+            case 'mistral':
+                return apiKey.length > 10; // Mistral keys don't have a standard prefix
+            default:
+                return false;
+        }
+    }
+
+    private generateFallbackMessage(diff: string, vibe: string): string | null {
+        try {
+            // Enhanced heuristic-based commit message generation
+            const lines = diff.split('\n');
+            const addedLines = lines.filter(line => line.startsWith('+')).length;
+            const removedLines = lines.filter(line => line.startsWith('-')).length;
+            const modifiedFiles = lines.filter(line => line.startsWith('diff --git')).length;
+
+            // Analyze file types
+            const fileChanges = lines
+                .filter(line => line.startsWith('diff --git'))
+                .map(line => {
+                    const match = line.match(/b\/(.+)$/);
+                    return match ? match[1] : '';
+                })
+                .filter(Boolean);
+
+            const fileTypes = this.analyzeFileTypes(fileChanges);
+            let action = 'update';
+            let scope = '';
+
+            // Determine action based on diff patterns
+            if (addedLines > removedLines * 3) {
+                action = fileTypes.config ? 'configure' : fileTypes.test ? 'test' : 'add';
+            } else if (removedLines > addedLines * 3) {
+                action = 'remove';
+            } else if (lines.some(line => line.includes('function') || line.includes('class') || line.includes('const '))) {
+                action = fileTypes.test ? 'test' : 'refactor';
+            } else if (lines.some(line => line.includes('import') || line.includes('require'))) {
+                action = 'update dependencies';
+            } else if (fileTypes.docs) {
+                action = 'document';
+            } else if (fileTypes.style) {
+                action = 'style';
+            }
+
+            // Determine scope
+            if (fileTypes.config) {
+                scope = 'config';
+            } else if (fileTypes.test) {
+                scope = 'tests';
+            } else if (fileTypes.docs) {
+                scope = 'docs';
+            } else if (fileTypes.api) {
+                scope = 'api';
+            } else if (fileTypes.ui) {
+                scope = 'ui';
+            }
+
+            const target = modifiedFiles === 1 ? 
+                (fileChanges[0]?.split('/').pop()?.split('.')[0] || 'file') : 
+                `${modifiedFiles} files`;
+
+            return this.formatMessage(action, scope, target, vibe);
+        } catch (error) {
+            console.error('Error generating fallback message:', error);
+            return null;
+        }
+    }
+
+    private analyzeFileTypes(files: string[]): { [key: string]: boolean } {
+        return {
+            config: files.some(f => /\.(json|yaml|yml|toml|ini|env)$/.test(f) || f.includes('config')),
+            test: files.some(f => /\.(test|spec)\.|test\/|__tests__\//.test(f)),
+            docs: files.some(f => /\.(md|txt|rst)$/.test(f) || f.includes('README')),
+            style: files.some(f => /\.(css|scss|sass|less|styl)$/.test(f)),
+            api: files.some(f => /api\/|routes\/|controllers\//.test(f)),
+            ui: files.some(f => /components\/|views\/|pages\//.test(f) || /\.(vue|jsx|tsx)$/.test(f))
+        };
+    }
+
+    private formatMessage(action: string, scope: string, target: string, vibe: string): string {
+        const scopePrefix = scope ? `${scope}: ` : '';
+        
+        switch (vibe) {
+            case 'conventional':
+                const type = this.getConventionalType(action);
+                return `${type}${scope ? `(${scope})` : ''}: ${action} ${target}`;
+            case 'emoji':
+                const emoji = this.getActionEmoji(action);
+                return `${emoji} ${scopePrefix}${action} ${target}`;
+            case 'corporate':
+                return `${scopePrefix}${action.charAt(0).toUpperCase() + action.slice(1)} ${target} to enhance system functionality`;
+            case 'casual':
+                return `${scopePrefix}${action}ed ${target}`;
+            case 'genz':
+                return `${scopePrefix}${action}ed ${target} and it hits different 🔥`;
+            default:
+                return `${scopePrefix}${action} ${target}`;
+        }
+    }
+
+    private getConventionalType(action: string): string {
+        switch (action) {
+            case 'add': return 'feat';
+            case 'remove': return 'refactor';
+            case 'test': return 'test';
+            case 'document': return 'docs';
+            case 'style': return 'style';
+            case 'configure': return 'chore';
+            case 'update dependencies': return 'chore';
+            default: return 'feat';
+        }
+    }
+
+    private getActionEmoji(action: string): string {
+        switch (action) {
+            case 'add': return '✨';
+            case 'remove': return '🗑️';
+            case 'test': return '🧪';
+            case 'document': return '📝';
+            case 'style': return '💄';
+            case 'configure': return '⚙️';
+            case 'update dependencies': return '⬆️';
+            case 'refactor': return '♻️';
+            default: return '🔧';
         }
     }
 
@@ -128,15 +287,34 @@ Generate only the commit message, no explanations or additional text.`;
                     headers: {
                         'Authorization': `Bearer ${apiKey}`,
                         'Content-Type': 'application/json'
-                    }
+                    },
+                    timeout: 30000
                 }
             );
 
             const data = response.data as any;
             return data.choices?.[0]?.message?.content?.trim() || null;
-        } catch (error) {
+        } catch (error: any) {
             console.error('OpenAI API error:', error);
-            throw new Error('Failed to call OpenAI API');
+            
+            if (error.response) {
+                const status = error.response.status;
+                const errorData = error.response.data;
+                
+                if (status === 401) {
+                    throw new Error('Invalid OpenAI API key. Please check your API key in settings.');
+                } else if (status === 429) {
+                    throw new Error('OpenAI API rate limit exceeded. Please try again later.');
+                } else if (status === 403) {
+                    throw new Error('OpenAI API access forbidden. Check your subscription.');
+                } else {
+                    throw new Error(`OpenAI API error (${status}): ${errorData?.error?.message || 'Unknown error'}`);
+                }
+            } else if (error.request) {
+                throw new Error('Failed to connect to OpenAI API. Please check your internet connection.');
+            } else {
+                throw new Error(`OpenAI API configuration error: ${error.message}`);
+            }
         }
     }
 
@@ -159,15 +337,34 @@ Generate only the commit message, no explanations or additional text.`;
                         'x-api-key': apiKey,
                         'Content-Type': 'application/json',
                         'anthropic-version': '2023-06-01'
-                    }
+                    },
+                    timeout: 30000
                 }
             );
 
             const data = response.data as any;
             return data.content?.[0]?.text?.trim() || null;
-        } catch (error) {
+        } catch (error: any) {
             console.error('Claude API error:', error);
-            throw new Error('Failed to call Claude API');
+            
+            if (error.response) {
+                const status = error.response.status;
+                const errorData = error.response.data;
+                
+                if (status === 401) {
+                    throw new Error('Invalid Claude API key. Please check your API key in settings.');
+                } else if (status === 429) {
+                    throw new Error('Claude API rate limit exceeded. Please try again later.');
+                } else if (status === 403) {
+                    throw new Error('Claude API access forbidden. Check your subscription.');
+                } else {
+                    throw new Error(`Claude API error (${status}): ${errorData?.error?.message || 'Unknown error'}`);
+                }
+            } else if (error.request) {
+                throw new Error('Failed to connect to Claude API. Please check your internet connection.');
+            } else {
+                throw new Error(`Claude API configuration error: ${error.message}`);
+            }
         }
     }
 
@@ -190,15 +387,37 @@ Generate only the commit message, no explanations or additional text.`;
                     headers: {
                         'Authorization': `Bearer ${apiKey}`,
                         'Content-Type': 'application/json'
-                    }
+                    },
+                    timeout: 30000
                 }
             );
 
             const data = response.data as any;
             return data.choices?.[0]?.message?.content?.trim() || null;
-        } catch (error) {
+        } catch (error: any) {
             console.error('Mistral API error:', error);
-            throw new Error('Failed to call Mistral API');
+            
+            // More detailed error handling
+            if (error.response) {
+                const status = error.response.status;
+                const errorData = error.response.data;
+                
+                if (status === 401) {
+                    throw new Error('Invalid Mistral API key. Please check your API key in settings.');
+                } else if (status === 429) {
+                    throw new Error('Mistral API rate limit exceeded. Please try again later.');
+                } else if (status === 403) {
+                    throw new Error('Mistral API access forbidden. Check your subscription.');
+                } else if (status === 404) {
+                    throw new Error('Mistral API endpoint not found. Please check the model name.');
+                } else {
+                    throw new Error(`Mistral API error (${status}): ${errorData?.message || errorData?.error || 'Unknown error'}`);
+                }
+            } else if (error.request) {
+                throw new Error('Failed to connect to Mistral API. Please check your internet connection.');
+            } else {
+                throw new Error(`Mistral API configuration error: ${error.message}`);
+            }
         }
     }
 

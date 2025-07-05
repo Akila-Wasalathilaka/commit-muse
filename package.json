@@ -67,6 +67,36 @@
         "title": "Settings",
         "category": "Akyyra",
         "icon": "$(settings-gear)"
+      },
+      {
+        "command": "akyyra-commit-muse.generateCommitToSCM",
+        "title": "Generate AI Commit to SCM",
+        "category": "Akyyra",
+        "icon": "$(sparkle)"
+      },
+      {
+        "command": "akyyra-commit-muse.voiceCommitToSCM",
+        "title": "Voice Commit to SCM",
+        "category": "Akyyra",
+        "icon": "$(mic)"
+      },
+      {
+        "command": "akyyra-commit-muse.generateWithVibe",
+        "title": "Generate with Vibe",
+        "category": "Akyyra",
+        "icon": "$(symbol-color)"
+      },
+      {
+        "command": "akyyra-commit-muse.stageFile",
+        "title": "Stage File",
+        "category": "Akyyra",
+        "icon": "$(add)"
+      },
+      {
+        "command": "akyyra-commit-muse.refresh",
+        "title": "Refresh",
+        "category": "Akyyra",
+        "icon": "$(refresh)"
       }
     ],
     "menus": {
@@ -74,6 +104,30 @@
         {
           "command": "akyyra-commit-muse.openPanel",
           "group": "navigation",
+          "when": "scmProvider == git"
+        },
+        {
+          "command": "akyyra-commit-muse.generateCommit",
+          "group": "navigation",
+          "when": "scmProvider == git"
+        }
+      ],
+      "scm/resourceGroup/context": [
+        {
+          "command": "akyyra-commit-muse.generateCommit",
+          "when": "scmProvider == git && scmResourceGroup == workingTree",
+          "group": "inline"
+        }
+      ],
+      "scm/inputBox": [
+        {
+          "command": "akyyra-commit-muse.voiceCommit",
+          "group": "navigation",
+          "when": "scmProvider == git"
+        },
+        {
+          "command": "akyyra-commit-muse.generateCommit",
+          "group": "navigation", 
           "when": "scmProvider == git"
         }
       ],
@@ -93,8 +147,36 @@
         {
           "command": "akyyra-commit-muse.settings"
         }
+      ],
+      "view/title": [
+        {
+          "command": "akyyra-commit-muse.refresh",
+          "when": "view == akyyra-commit-muse-view",
+          "group": "navigation"
+        },
+        {
+          "command": "akyyra-commit-muse.generateCommitToSCM",
+          "when": "view == akyyra-commit-muse-view",
+          "group": "navigation"
+        }
       ]
     },
+    "views": {
+      "scm": [
+        {
+          "id": "akyyra-commit-muse-view",
+          "name": "AI Commit Assistant",
+          "when": "scmProvider == git"
+        }
+      ]
+    },
+    "viewsWelcome": [
+      {
+        "view": "akyyra-commit-muse-view",
+        "contents": "🚀 **Akyyra Commit Muse** is ready!\n\nGenerate AI-powered commit messages with style.\n\n[⚙️ Configure API Key](command:akyyra-commit-muse.settings)\n[✨ Generate Commit](command:akyyra-commit-muse.generateCommit)\n\nTo get started, stage some changes and click Generate Commit.",
+        "when": "workbenchState != empty"
+      }
+    ],
     "configuration": {
       "title": "Akyyra Commit Muse",
       "properties": {
